@@ -3,7 +3,6 @@ use std::{
     fmt,
     io,
 };
-use std::io::Error;
 
 use gif::DecodingError;
 
@@ -84,7 +83,7 @@ impl From<GifDisposeError> for ConvError {
 }
 
 impl From<io::Error> for ConvError {
-    fn from(_: Error) -> Self {
+    fn from(_: io::Error) -> Self {
         Self::UserInputError
     }
 }
