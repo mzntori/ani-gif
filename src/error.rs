@@ -1,8 +1,9 @@
 use std::{
     error,
     fmt,
-    path::Path
+    io,
 };
+use std::io::Error;
 
 use gif::DecodingError;
 
@@ -23,41 +24,47 @@ pub enum ConvError {
     FailedFileCreation,
     DecodingError,
     GifDisposeError,
+    UserInputError,
 }
 
 impl fmt::Display for ConvError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ConvError::HotspotOutOfMaxRange(x, y) => {
-                write!(f, "Error: Hotspot can't be above 256. Given coordinates: x: {}, y: {}.", x, y)
+                write!(f, "Hotspot can't be above 256. Given coordinates: x: {}, y: {}.", x, y)
             }
             ConvError::HotspotOutOfGifRange(user_x, user_y, gif_x, gif_y) => {
-                write!(f, "Error: Hotspot can't be above x: {}, y: {}. Given coordinates: x: {}, y: {}.", gif_x, gif_y, user_x, user_y)
+                write!(f, "Hotspot can't be above x: {}, y: {}. Given coordinates: x: {}, y: {}.", gif_x, gif_y, user_x, user_y)
             }
             ConvError::InvalidGifPath(path) => {
-                write!(f, "Error: No .gif file found under {}.", path)
+                write!(f, "No .gif file found under {}.", path)
             }
             ConvError::InvalidAniExtension(path) => {
-                write!(f, "Error: {} doesn't have the .ani file extension.", path)
+                write!(f, "{} doesn't have the .ani file extension.", path)
             }
             ConvError::InvalidHotspotDefinition => {
-                write!(f, "Error: Hotspot could not be parsed properly. Try the following syntax: `x:y`.")
+                write!(f, "Hotspot could not be parsed properly. Try the following syntax: `x:y`.")
             }
             ConvError::FailedAniEncoding => {
-                write!(f, "Error: Failed to encode to ani format correctly.")
+                write!(f, "Failed to encode to ani format correctly.")
             }
             ConvError::FailedPngEncoding => {
-                write!(f, "Error: Failed to encode to png format correctly.")
+                write!(f, "Failed to encode to png format correctly.")
             }
             ConvError::FailedFileCreation => {
-                write!(f, "Error: Failed to create files.")
+                write!(f, "Failed to create files.")
             }
             ConvError::DecodingError => {
-                write!(f, "Error: Failed to decode.")
+                write!(f, "Failed to decode.")
             }
             ConvError::GifDisposeError => {
-                write!(f, "Error: failed to dispose gif.")
+                write!(f, "Failed to dispose gif.")
             }
+            ConvError::UserInputError => {
+                write!(f, "Stopping conversion.")
+            }
+            #[allow(unreachable_patterns)]
+            _ => { write!(f, "Unkown Error.") }
         }
     }
 }
@@ -73,5 +80,11 @@ impl From<DecodingError> for ConvError {
 impl From<GifDisposeError> for ConvError {
     fn from(_: GifDisposeError) -> Self {
         Self::GifDisposeError
+    }
+}
+
+impl From<io::Error> for ConvError {
+    fn from(_: Error) -> Self {
+        Self::UserInputError
     }
 }

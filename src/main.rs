@@ -5,6 +5,7 @@ use error::ConvError;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::path::Path;
+use std::io;
 
 use clap::{Arg, Command};
 
@@ -17,8 +18,7 @@ use riff_ani::ico::{IconDir, IconDirEntry, IconImage, ResourceType};
 
 #[derive(PartialOrd, PartialEq, Debug)]
 enum DebugMode {
-    None,
-    Information,
+    Default,
     Debug,
 }
 
@@ -29,6 +29,30 @@ fn gif_to_ani(g: &String, a: &String, frame_rate: u32, hotspot: &String, debug_m
     // Path logic
     if !gif_path.is_file() {
         return Err(ConvError::InvalidGifPath(g.to_string()));
+    }
+    
+    if ani_path.is_file() {
+        println!(
+            "{} already exists. Do you want to overwrite it. [y/N] ",
+            ani_path
+                .file_name()
+                .unwrap_or(
+                    gif_path
+                        .with_extension("ani")
+                        .file_name()
+                        .unwrap()
+                )
+                .to_str()
+                .unwrap_or("*Invalid Path*")
+        );
+        let mut user_input = String::new();
+        io::stdin().read_line(&mut user_input)?;
+        
+        if !(user_input.trim().to_lowercase() == "y") {
+            return Err(ConvError::UserInputError);
+        }
+        
+        println!("Starting conversion.")
     }
     
     if gif_path.extension() != Some(OsStr::new("gif")) {
@@ -104,11 +128,11 @@ fn gif_to_ani(g: &String, a: &String, frame_rate: u32, hotspot: &String, debug_m
         icon_dir.add_entry(entry);
         ani_frames.push(icon_dir);
         
-        if debug_mode == DebugMode::Information {
+        if debug_mode == DebugMode::Default {
             print!("\r{} frames converted...", frame_count);
         }
     }
-    if debug_mode == DebugMode::Information {
+    if debug_mode == DebugMode::Default {
         print!("\r{} frames converted successfully.", frame_count);
         println!();
     }
@@ -216,15 +240,18 @@ fn main() -> Result<(), ConvError> {
                 .get_one::<String>("hotspot")
                 .expect("invalid hotspot");
             
-            gif_to_ani(
+            let result = gif_to_ani(
                 gif_path,
                 ani_path,
                 frame_rate.parse().expect("Failed to parse frame rate"),
                 hotspot,
-                DebugMode::Information,
-            )?;
+                DebugMode::Default,
+            );
             
-            println!("Conversion successful.")
+            match result {
+                Err(e) => { println!("{}", e); }
+                Ok(_o) => { println!("Conversion successful.") }
+            }
         }
         _ => {
             println!("Invalid subcommand.");
