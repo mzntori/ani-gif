@@ -1,6 +1,6 @@
 # ani-gif
 
-Simple tool for converting gifs into .ani files.
+Simple tool for converting gifs into .ani cursor files.
 
 ### Example
 
